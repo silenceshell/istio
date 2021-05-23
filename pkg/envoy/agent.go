@@ -70,6 +70,7 @@ type exitStatus struct {
 // Run starts the envoy and waits until it terminates.
 func (a *Agent) Run(ctx context.Context) error {
 	log.Info("Starting proxy agent")
+	//stopCh := make(chan struct{})
 	go a.runWait(0, a.abortCh)
 
 	select {
@@ -87,6 +88,12 @@ func (a *Agent) Run(ctx context.Context) error {
 		return nil
 	case <-ctx.Done():
 		a.terminate()
+		status := <-a.statusCh
+		if status.err != nil && status.err == errAbort {
+			log.Infof("Epoch %d aborted normally", status.epoch)
+		} else {
+			log.Warnf("Epoch %d aborted abnormally", status.epoch)
+		}
 		log.Info("Agent has successfully terminated")
 		return nil
 	}
